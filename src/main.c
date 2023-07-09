@@ -5,10 +5,12 @@
 #include <locale.h>
 #include <string.h>
 
+#include "gameoflife.h"
+
 int draw_home();
-void draw_game();
-void draw_game_board(WINDOW *win);
-void draw_game_stats(WINDOW *win, int iteration);
+void run_game();
+void draw_game_board(WINDOW *win, gameoflife *gol, int board_startx, int board_starty);
+void draw_game_stats(WINDOW *win, gameoflife *gol);
 
 WINDOW *create_win(int startx, int starty, int lines, int columns);
 void destroy_win(WINDOW *win);
@@ -24,7 +26,7 @@ int main() {
     init_pair(1, COLOR_MAGENTA, COLOR_BLACK);
 
     if (draw_home() == 0) {
-        draw_game();
+        run_game();
     }
 
 	endwin(); // End curses mode
@@ -77,31 +79,55 @@ int draw_home() {
     }
 }
 
-void draw_game() {
+void run_game() {
     WINDOW *win = create_win(0, 0, LINES, COLS);
+    int board_startx = 1;
+    int board_starty = 1;
+    int board_width = COLS - 2;
+    int board_height = LINES - 4;
+    gameoflife *gol = gol_init(board_width, board_height);
 
-    draw_game_stats(win, 1234);
+    while (TRUE) {
+        draw_game_board(win, gol, board_startx, board_starty);
+        draw_game_stats(win, gol);
+        wrefresh(win);
 
-    wrefresh(win);
-    wgetch(win);
+        int ch = wgetch(win);
+        if (ch == 'r' || ch == 'R') {
+            gol = gol_init(board_width, board_height);
+        } else if (ch == 'q' || ch == 'Q') {
+            break;
+        } else {
+            gol_update(gol);
+        }
+    }
 
     destroy_win(win);
 }
 
-void draw_game_board(WINDOW *win) {
-
+void draw_game_board(WINDOW *win, gameoflife *gol, int board_startx, int board_starty) {
+    for (int row = 0; row < gol->board_height; row++) {
+        for (int col = 0; col < gol->board_width; col++) {
+            int val = gol_get_cell(gol, row, col);
+            if (val == 1) {
+                mvwaddch(win, board_starty + row, board_startx + col, ACS_CKBOARD);
+            } else {
+                mvwaddch(win, board_starty + row, board_startx + col, ' ');
+            }
+        }
+    }
 }
 
-void draw_game_stats(WINDOW *win, int iteration) {
+void draw_game_stats(WINDOW *win, gameoflife *gol) {
     int win_height, win_width;
     getmaxyx(win, win_height, win_width);
 
     mvwaddch(win, win_height-3, 0, ACS_LTEE); // Create left tee on border
     mvwhline(win, win_height-3, 1, ACS_HLINE, win_width-2); // Create line
     mvwaddch(win, win_height-3, win_width-1, ACS_RTEE);  // Create right tee on border
-    mvwprintw(win, win_height-2, 2, "Iteration: %d", iteration);
+    mvwprintw(win, win_height-2, 2, "Iteration: %10d", gol->iteration);
 
-    char *string = "Press R to restart";
+    char *string = "(R)estart. (Q)uit";
     int starty = win_width - 2 - strlen(string);
     mvwprintw(win, win_height-2, starty, string);
 }
