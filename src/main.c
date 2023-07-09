@@ -106,6 +106,7 @@ void run_game() {
 }
 
 void draw_game_board(WINDOW *win, gameoflife *gol, int board_startx, int board_starty) {
+    wattron(win, COLOR_PAIR(1));
     for (int row = 0; row < gol->board_height; row++) {
         for (int col = 0; col < gol->board_width; col++) {
             int val = gol_get_cell(gol, row, col);
@@ -116,6 +117,7 @@ void draw_game_board(WINDOW *win, gameoflife *gol, int board_startx, int board_s
             }
         }
     }
+    wattroff(win, COLOR_PAIR(1));
 }
 
 void draw_game_stats(WINDOW *win, gameoflife *gol) {
